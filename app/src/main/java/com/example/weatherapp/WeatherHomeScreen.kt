@@ -28,8 +28,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.weatherapp.api.City
-import com.example.weatherapp.api.WeatherModel
 import com.example.weatherapp.ui.DefaultText
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.AppFont
@@ -46,7 +44,7 @@ fun WeatherHomeScreen(cityName: String, cityRegion: String, onSettingsClick: () 
         TopHomeNavBar(onSettingsClick)
 
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            CityWeatherMainInfo()
+            CityWeatherMainInfo(cityName)
 
             Spacer(modifier = Modifier.size(30.dp))
 
@@ -93,7 +91,7 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
 }
 
 @Composable
-private fun CityWeatherMainInfo() {
+private fun CityWeatherMainInfo(city: String) {
     Column {
         Spacer(modifier = Modifier.size(10.dp))
         Row(
@@ -121,7 +119,7 @@ private fun CityWeatherMainInfo() {
                     ) {
                         Spacer(modifier = Modifier.size(20.dp))
                         Text(
-                            "Warszawa",
+                            city,
                             fontFamily = AppFont.Baloo2FontFamily,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,

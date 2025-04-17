@@ -51,7 +51,7 @@ import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
 
 @Composable
-fun SearchCityScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
+fun SearchCityScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, onCitySelected: () -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
 
@@ -105,6 +105,10 @@ fun SearchCityScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
                 CityCard(
                     city = city,
                     isFavorite = isFavorite,
+                    onClick = {
+                        viewModel.selectCity(city)
+                        onCitySelected()
+                    },
                     onFavoriteToggle = { viewModel.toggleFavorite(city) }
                 )
             }
@@ -215,6 +219,7 @@ private fun CustomSearchView(
 fun CityCard(
     city: City,
     isFavorite: Boolean,
+    onClick: () -> Unit,
     onFavoriteToggle: () -> Unit
 ) {
 
@@ -228,6 +233,7 @@ fun CityCard(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(10.dp))
                 .background(Color(0x66000000))
+                .clickable { onClick() }
                 .padding(top = 12.dp, bottom = 12.dp, start = 15.dp, end = 15.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween

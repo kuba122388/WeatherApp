@@ -16,9 +16,9 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -26,11 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.weatherapp.api.City
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
@@ -48,20 +43,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             WeatherAppTheme {
-                val navController = rememberNavController()
-
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    NavHost(navController = navController, startDestination = "home") {
-                        composable("home") {
-                            HomeScreen(viewModel = weatherViewModel, navController = navController)
-                        }
-                        composable("weather/{cityName}") { backStackEntry ->
-                            val cityName = backStackEntry.arguments?.getString("cityName")
-                            val cityRegion = backStackEntry.arguments?.getString("cityRegion")
-                            WeatherHomeScreen(cityName = cityName ?: "", cityRegion = cityRegion ?: "", onSettingsClick = {})
-                        }
-                    }
-                }
+                HomeScreen(viewModel = weatherViewModel)
             }
         }
     }
@@ -69,7 +51,7 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun HomeScreen(viewModel: WeatherViewModel, navController: NavController) {
+fun HomeScreen(viewModel: WeatherViewModel) {
     var selectedIndex by rememberSaveable { mutableIntStateOf(1) }
     Box(
         modifier = Modifier
@@ -84,9 +66,20 @@ fun HomeScreen(viewModel: WeatherViewModel, navController: NavController) {
         ) { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)) {
                 when (selectedIndex) {
-                    0 -> SearchCityScreen(viewModel) { selectedIndex = 3 }
-                    1 -> WeatherHomeScreen {selectedIndex = 3 }
-                    2 -> FavoriteScreen(viewModel, navController) { selectedIndex = 3 }
+                    0 -> SearchCityScreen(
+                        viewModel,
+                        onSettingsClick = { selectedIndex = 3 },
+                        onCitySelected = { selectedIndex = 1 })
+
+                    1 -> {
+                        val selectedCity by viewModel.selectedCity.observeAsState()
+                        WeatherHomeScreen(
+                            cityName = selectedCity?.name.orEmpty(),
+                            cityRegion = selectedCity?.region.orEmpty()
+                        ) { selectedIndex = 3 }
+                    }
+
+                    2 -> FavoriteScreen(viewModel) { selectedIndex = 3 }
                     3 -> SettingsScreen()
                 }
             }

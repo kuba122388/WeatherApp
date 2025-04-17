@@ -26,6 +26,9 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     private val _favoriteCities = MutableLiveData<List<City>>()
     val favoriteCities: LiveData<List<City>> = _favoriteCities
 
+    private val _selectedCity = MutableLiveData<City?>()
+    val selectedCity: LiveData<City?> = _selectedCity
+
     init {
         loadFavorites()
     }
@@ -81,4 +84,9 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     fun isCityFavorite(city: City): Boolean {
         return _favoriteCities.value?.any { it == city } == true
     }
+
+    fun selectCity(city: City) {
+        _selectedCity.value = city
+    }
 }
+

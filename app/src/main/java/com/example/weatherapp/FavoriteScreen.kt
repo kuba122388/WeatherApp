@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,19 +22,16 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.example.weatherapp.ui.DefaultText
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
 
 @Composable
-fun FavoriteScreen(viewModel: WeatherViewModel, navController: NavController, onSettingsClick: () -> Unit) {
+fun FavoriteScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
     val favoriteCities by viewModel.favoriteCities.observeAsState(emptyList())
 
     Column(
@@ -68,6 +64,10 @@ fun FavoriteScreen(viewModel: WeatherViewModel, navController: NavController, on
                     CityCard(
                         city,
                         isFavorite = true,
+                        onClick = {
+                            viewModel.selectCity(city)
+                            onSettingsClick()
+                        },
                         onFavoriteToggle = { viewModel.toggleFavorite(city) })
                 }
             }
