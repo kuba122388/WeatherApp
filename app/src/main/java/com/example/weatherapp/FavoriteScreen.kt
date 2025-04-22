@@ -31,7 +31,7 @@ import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
 
 @Composable
-fun FavoriteScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
+fun FavoriteScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, onCitySelected: () -> Unit) {
     val favoriteCities by viewModel.favoriteCities.observeAsState(emptyList())
 
     Column(
@@ -66,7 +66,7 @@ fun FavoriteScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
                         isFavorite = true,
                         onClick = {
                             viewModel.selectCity(city)
-                            onSettingsClick()
+                            onCitySelected()
                         },
                         onFavoriteToggle = { viewModel.toggleFavorite(city) })
                 }
