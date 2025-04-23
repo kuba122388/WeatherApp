@@ -72,10 +72,8 @@ fun HomeScreen(viewModel: WeatherViewModel) {
                         onCitySelected = { selectedIndex = 1 })
 
                     1 -> {
-                        val selectedCity by viewModel.selectedCity.observeAsState()
                         WeatherHomeScreen(
-                            cityName = selectedCity?.name.orEmpty(),
-                            cityRegion = selectedCity?.region.orEmpty()
+                            viewModel
                         ) { selectedIndex = 3 }
                     }
 

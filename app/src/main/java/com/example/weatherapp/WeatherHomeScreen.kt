@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -28,13 +30,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weatherapp.api.NetworkResponse
+import com.example.weatherapp.api.WeatherModel
 import com.example.weatherapp.ui.DefaultText
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.AppFont
+import com.example.weatherapp.weatherViewModel.WeatherViewModel
 
 
 @Composable
-fun WeatherHomeScreen(cityName: String, cityRegion: String, onSettingsClick: () -> Unit) {
+fun WeatherHomeScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -44,11 +49,13 @@ fun WeatherHomeScreen(cityName: String, cityRegion: String, onSettingsClick: () 
         TopHomeNavBar(onSettingsClick)
 
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            CityWeatherMainInfo(cityName)
+            val cityInfo by viewModel.weatherResult.observeAsState()
+
+            cityInfo?.let { CityWeatherMainInfo(it) }
 
             Spacer(modifier = Modifier.size(30.dp))
 
-            DailyForecast()
+            cityInfo?.let { DailyForecast(it) }
         }
     }
 }
@@ -91,66 +98,101 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
 }
 
 @Composable
-private fun CityWeatherMainInfo(city: String) {
-    Column {
-        Spacer(modifier = Modifier.size(10.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
+private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>) {
+    when (cityInfo) {
+        is NetworkResponse.Loading -> {
+            Text(
+                text = "Loading...",
+                fontFamily = AppFont.Baloo2FontFamily,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                fontSize = 24.sp
+            )
+        }
+
+        is NetworkResponse.Success -> {
+            val weather = cityInfo.data
+            val city = weather.location.name
+            val region = weather.location.region
+            val temperature = weather.current.temp_c
+            val condition = weather.current.condition.text
+            val weatherIcon = getWeatherIcon(condition = condition)
+
             Column {
-                Box(
+                Spacer(modifier = Modifier.size(10.dp))
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(color = Color(0x33000000))
-                        .padding(vertical = 15.dp, horizontal = 10.dp),
-                    contentAlignment = Alignment.TopCenter
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .padding(all = 5.dp)
-                    )
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy((-8).dp)
-                    ) {
-                        Spacer(modifier = Modifier.size(20.dp))
-                        Text(
-                            city,
-                            fontFamily = AppFont.Baloo2FontFamily,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontSize = 32.sp
-                        )
-                        DefaultText(
-                            "Partly Cloudy",
-                            fontSize = 16.sp
-                        )
-                        Image(
+                    Column {
+                        Box(
                             modifier = Modifier
-                                .size(150.dp)
-                                .padding(vertical = 10.dp),
-                            painter = painterResource(id = R.drawable.weather_partly_cloudy),
-                            contentDescription = "Partly Cloudy",
-                        )
-                        DefaultText(
-                            "22°C",
-                            fontSize = 40.sp
-                        )
-                        Spacer(modifier = Modifier.size(15.dp))
-                        CityWeatherAdditionalInfo()
+                                .fillMaxWidth(0.8f)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(color = Color(0x33000000))
+                                .padding(vertical = 15.dp, horizontal = 10.dp),
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy((-8).dp)
+                            ) {
+                                Spacer(modifier = Modifier.size(20.dp))
+                                DefaultText(
+                                    city,
+                                    fontSize = 32.sp
+                                )
+                                if (region != "" && region != city) DefaultText(string = region)
+                                DefaultText(condition, fontSize = 16.sp)
+                                Image(
+                                    modifier = Modifier
+                                        .size(150.dp)
+                                        .padding(vertical = 10.dp),
+                                    painter = painterResource(id = weatherIcon),
+                                    contentDescription = condition,
+                                )
+                                DefaultText("${temperature}°C", fontSize = 40.sp)
+                                Spacer(modifier = Modifier.size(15.dp))
+                                CityWeatherAdditionalInfo(weather)
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        is NetworkResponse.Error -> {
+            Text(
+                text = "Failed to load weather data",
+                fontFamily = AppFont.Baloo2FontFamily,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                fontSize = 24.sp
+            )
         }
     }
 }
 
 @Composable
-private fun CityWeatherAdditionalInfo() {
+fun getWeatherIcon(condition: String): Int {
+    return when (condition.trim().lowercase()) {
+        "sunny" -> R.drawable.weather_sunny
+        "cloudy" -> R.drawable.weather_cloudy
+        "partly cloudy" -> R.drawable.weather_partly_cloudy
+        "mist" -> R.drawable.weather_mist
+        "fog" -> R.drawable.weather_mist
+        "clear" -> R.drawable.weather_clear_night
+        "rain" -> R.drawable.weather_rainy
+        "moderate rain" -> R.drawable.weather_rainy
+        "light rain shower" -> R.drawable.weather_rainy_sun
+        "patchy rain nearby" -> R.drawable.weather_rainy
+        else -> R.drawable.weather_sunny
+    }
+}
+
+@Composable
+private fun CityWeatherAdditionalInfo(cityInfo: WeatherModel) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
@@ -164,7 +206,7 @@ private fun CityWeatherAdditionalInfo() {
                 contentDescription = "Wind",
             )
             Spacer(modifier = Modifier.size(10.dp))
-            DefaultText("5 km/h")
+            DefaultText(cityInfo.current.wind_kph + " km/h")
         }
         Spacer(modifier = Modifier.size(20.dp))
         Row(
@@ -176,7 +218,7 @@ private fun CityWeatherAdditionalInfo() {
                 contentDescription = "Wind",
             )
             Spacer(modifier = Modifier.size(5.dp))
-            DefaultText("2 %")
+            DefaultText(cityInfo.current.humidity + " %")
         }
     }
     Spacer(modifier = Modifier.size(20.dp))
@@ -189,13 +231,14 @@ private fun CityWeatherAdditionalInfo() {
             contentDescription = "Air Pressure"
         )
         Spacer(modifier = Modifier.size(5.dp))
-        DefaultText("1013 hPa")
+        DefaultText(cityInfo.current.pressure_mb + " hPa")
     }
     Spacer(modifier = Modifier.size(20.dp))
 }
 
+
 @Composable
-private fun DailyForecast() {
+private fun DailyForecast(cityInfo: NetworkResponse<WeatherModel>) {
     return Column {
         Row(
             Modifier
@@ -217,24 +260,53 @@ private fun DailyForecast() {
         }
 
         Spacer(modifier = Modifier.size(10.dp))
-        Row(
-            modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            DailyCard("Today", R.drawable.weather_partly_cloudy, "Partly Cloudy", 22)
-            DailyCard("15 Apr", R.drawable.weather_sunny, "Sunny", 32)
-            DailyCard("16 Apr", R.drawable.weather_windy, "Windy", 15)
-            DailyCard("17 Apr", R.drawable.weather_snowy, "Snowy", -5)
+        when (cityInfo) {
+            is NetworkResponse.Loading -> {
+                Text(
+                    text = "Loading...",
+                    fontFamily = AppFont.Baloo2FontFamily,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontSize = 24.sp
+                )
+            }
+
+            is NetworkResponse.Success -> {
+                val forecast = cityInfo.data.forecast
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    forecast.forecastday.forEach { day ->
+                        DailyCard(
+                            date = day.date,
+                            id = getWeatherIcon(condition = day.day.condition.text),
+                            contentDescription = day.day.condition.text,
+                            temp = day.day.avgtemp_c
+                        )
+                    }
+                }
+            }
+
+            is NetworkResponse.Error -> {
+                Text(
+                    text = "Failed to load weather data",
+                    fontFamily = AppFont.Baloo2FontFamily,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontSize = 24.sp
+                )
+            }
         }
         Spacer(modifier = Modifier.size(20.dp))
     }
 }
 
 @Composable
-private fun DailyCard(date: String, id: Int, contentDescription: String, temp: Int) {
+private fun DailyCard(date: String, id: Int, contentDescription: String, temp: String) {
     return Box(
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
@@ -253,6 +325,7 @@ private fun DailyCard(date: String, id: Int, contentDescription: String, temp: I
                 ), contentDescription = contentDescription,
                 modifier = Modifier.size(45.dp)
             )
+            DefaultText(string = contentDescription, fontSize = 18.sp)
             DefaultText(string = "$temp°C", fontSize = 18.sp)
         }
     }

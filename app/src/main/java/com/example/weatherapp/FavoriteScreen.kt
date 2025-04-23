@@ -3,6 +3,7 @@ package com.example.weatherapp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,7 +52,8 @@ fun FavoriteScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, onC
             Spacer(modifier = Modifier.size(20.dp))
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 if (favoriteCities.isEmpty()) {
                     Text(
@@ -70,6 +74,7 @@ fun FavoriteScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, onC
                         },
                         onFavoriteToggle = { viewModel.toggleFavorite(city) })
                 }
+                Spacer(Modifier.size(10.dp))
             }
         }
     }

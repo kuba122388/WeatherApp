@@ -27,17 +27,21 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     val favoriteCities: LiveData<List<City>> = _favoriteCities
 
     private val _selectedCity = MutableLiveData<City?>()
-    val selectedCity: LiveData<City?> = _selectedCity
+    // val selectedCity: LiveData<City?> = _selectedCity
 
     init {
         loadFavorites()
     }
 
-    fun getData(city: String) {
+    private fun getWeather(city: City) {
         _weatherResult.value = NetworkResponse.Loading
         viewModelScope.launch {
             try {
-                val response = weatherApi.getWeather(Constant.apiKey, city)
+                val response = weatherApi.getWeather(
+                    Constant.apiKey,
+                    city.name,
+                    city.region
+                )
                 if (response.isSuccessful) {
                     response.body()?.let {
                         _weatherResult.value = NetworkResponse.Success(it)
@@ -62,7 +66,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         }
     }
 
-    fun loadFavorites() {
+    private fun loadFavorites() {
         _favoriteCities.value = sharedPreferencesHelper.getFavoriteCities()
     }
 
@@ -86,6 +90,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     }
 
     fun selectCity(city: City) {
+        getWeather(city)
         _selectedCity.value = city
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -51,7 +54,11 @@ import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
 
 @Composable
-fun SearchCityScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, onCitySelected: () -> Unit) {
+fun SearchCityScreen(
+    viewModel: WeatherViewModel,
+    onSettingsClick: () -> Unit,
+    onCitySelected: () -> Unit
+) {
     var searchQuery by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
 
@@ -71,7 +78,7 @@ fun SearchCityScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, o
             }
             .padding(horizontal = 16.dp)
     ) {
-        LazyColumn(
+        Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .fillMaxSize()
@@ -83,35 +90,42 @@ fun SearchCityScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, o
                 }
 
         ) {
-            item {
-                TopHomeNavBar(onSettingsClick)
-            }
-            item {
-                CustomSearchView(search = searchQuery, onValueChange = {
-                    searchQuery = it
-                }, viewModel = viewModel)
-            }
-            item {
-                when (val result = weatherResult.value) {
-                    is NetworkResponse.Error -> Text(text = result.message)
-                    NetworkResponse.Loading -> CircularProgressIndicator()
-                    is NetworkResponse.Success -> Text(text = result.data.toString())
-                    null -> {}
+
+            TopHomeNavBar(onSettingsClick)
+
+
+            CustomSearchView(search = searchQuery, onValueChange = {
+                searchQuery = it
+            }, viewModel = viewModel)
+
+//            item {
+//                when (val result = weatherResult.value) {
+//                    is NetworkResponse.Error -> Text(text = result.message)
+//                    NetworkResponse.Loading -> CircularProgressIndicator()
+//                    is NetworkResponse.Success -> Text(text = result.data.toString())
+//                    null -> {}
+//                }
+//            }
+            Column (
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ){
+                suggestions.forEach { city ->
+                    val isFavorite =
+                        favorites.value.any { it == city }
+                    CityCard(
+                        city = city,
+                        isFavorite = isFavorite,
+                        onClick = {
+                            viewModel.selectCity(city)
+                            onCitySelected()
+                        },
+                        onFavoriteToggle = { viewModel.toggleFavorite(city) }
+                    )
                 }
+                Spacer(Modifier.size(10.dp))
             }
-            items(suggestions) { city ->
-                val isFavorite =
-                    favorites.value.any { it == city }
-                CityCard(
-                    city = city,
-                    isFavorite = isFavorite,
-                    onClick = {
-                        viewModel.selectCity(city)
-                        onCitySelected()
-                    },
-                    onFavoriteToggle = { viewModel.toggleFavorite(city) }
-                )
-            }
+
         }
 
     }
@@ -225,7 +239,7 @@ fun CityCard(
 
     val context = LocalContext.current
 
-    return Box(
+    Box(
         modifier = Modifier.padding(horizontal = 15.dp)
     ) {
         Row(
