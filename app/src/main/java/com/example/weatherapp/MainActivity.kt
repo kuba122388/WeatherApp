@@ -2,6 +2,7 @@ package com.example.weatherapp
 
 import SharedPreferencesHelper
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import com.example.weatherapp.api.NetworkResponse
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
@@ -41,11 +43,34 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        weatherViewModel.checkConnectivityAndLoadData(applicationContext)
+
+        weatherViewModel.weatherResult.observe(this) { response ->
+            when (response) {
+                is NetworkResponse.Loading -> {
+                }
+
+                is NetworkResponse.Success -> {
+                    val weatherData = response.data
+                }
+
+                is NetworkResponse.Error -> {
+                    Toast.makeText(
+                        this,
+                        response.message ?: "Nie udało się pobrać danych",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
         setContent {
             WeatherAppTheme {
                 HomeScreen(viewModel = weatherViewModel)
             }
         }
+
+
     }
 }
 

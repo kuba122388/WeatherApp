@@ -64,6 +64,7 @@ fun SearchCityScreen(
 
     val weatherResult = viewModel.weatherResult.observeAsState()
     val suggestions by viewModel.citySuggestions.observeAsState(emptyList())
+    val context = LocalContext.current
 
     val favorites = viewModel.favoriteCities.observeAsState(emptySet())
 
@@ -117,7 +118,7 @@ fun SearchCityScreen(
                         city = city,
                         isFavorite = isFavorite,
                         onClick = {
-                            viewModel.selectCity(city)
+                            viewModel.selectCity(city, context)
                             onCitySelected()
                         },
                         onFavoriteToggle = { viewModel.toggleFavorite(city) }
