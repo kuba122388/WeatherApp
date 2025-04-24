@@ -2,7 +2,6 @@ package com.example.weatherapp
 
 import SharedPreferencesHelper
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,7 +18,6 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -27,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import com.example.weatherapp.api.NetworkResponse
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
@@ -44,25 +41,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         weatherViewModel.checkConnectivityAndLoadData(applicationContext)
-
-        weatherViewModel.weatherResult.observe(this) { response ->
-            when (response) {
-                is NetworkResponse.Loading -> {
-                }
-
-                is NetworkResponse.Success -> {
-                    val weatherData = response.data
-                }
-
-                is NetworkResponse.Error -> {
-                    Toast.makeText(
-                        this,
-                        response.message ?: "Nie udało się pobrać danych",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
 
         setContent {
             WeatherAppTheme {

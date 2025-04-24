@@ -183,6 +183,7 @@ fun getWeatherIcon(condition: String): Int {
         "mist" -> R.drawable.weather_mist
         "fog" -> R.drawable.weather_mist
         "clear" -> R.drawable.weather_clear_night
+        "overcast" -> R.drawable.weather_cloudy_night
         "rain" -> R.drawable.weather_rainy
         "moderate rain" -> R.drawable.weather_rainy
         "light rain shower" -> R.drawable.weather_rainy_sun
