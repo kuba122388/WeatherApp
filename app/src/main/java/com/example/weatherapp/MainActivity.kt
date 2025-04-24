@@ -84,7 +84,7 @@ fun HomeScreen(viewModel: WeatherViewModel) {
                         viewModel,
                         onSettingsClick = { selectedIndex = 3 },
                         onCitySelected = { selectedIndex = 1 })
-                    3 -> SettingsScreen()
+                    3 -> SettingsScreen(viewModel)
                 }
             }
         }

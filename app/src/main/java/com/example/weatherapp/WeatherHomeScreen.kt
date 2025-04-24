@@ -1,5 +1,7 @@
 package com.example.weatherapp
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -36,22 +39,25 @@ import com.example.weatherapp.ui.DefaultText
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 
 @Composable
 fun WeatherHomeScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(brush = AppBackgroundGradient)
             .padding(horizontal = 16.dp)
     ) {
-        TopHomeNavBar(onSettingsClick)
+        TopHomeNavBar(onSettingsClick, viewModel)
 
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             val cityInfo by viewModel.weatherResult.observeAsState()
 
-            cityInfo?.let { CityWeatherMainInfo(it) }
+            cityInfo?.let { CityWeatherMainInfo(it, viewModel) }
 
             Spacer(modifier = Modifier.size(30.dp))
 
@@ -61,7 +67,10 @@ fun WeatherHomeScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) 
 }
 
 @Composable
-private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
+private fun TopHomeNavBar(onSettingsClick: () -> Unit, viewModel: WeatherViewModel) {
+    val lastUpdated by viewModel.lastUpdated.observeAsState("Unknown")
+    val context = LocalContext.current
+
     return Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -75,9 +84,18 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
             modifier = Modifier
                 .size(36.dp)
                 .alpha(0.5f)
+                .clickable {
+                    if (!viewModel.isInternetAvailable(context)){
+                        Toast.makeText(context, "No Internet Connection", Toast.LENGTH_LONG).show()
+                    }
+                    else{
+                        Toast.makeText(context, "Refreshing data...", Toast.LENGTH_SHORT).show()
+                        viewModel.checkConnectivityAndLoadData(context)
+                    }
+                Log.e("MyDebug", "CLICKED")}
         )
         Text(
-            text = "Last updated: 30s ago",
+            text = "Last update: ${formatApiDate(lastUpdated)}",
             style = TextStyle(
                 color = Color.White,
                 fontFamily = AppFont.Baloo2FontFamily,
@@ -97,8 +115,20 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
     }
 }
 
+fun formatApiDate(raw: String): String {
+    return try {
+        val parser = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        val formatter = SimpleDateFormat("dd.MM.yyyy, HH:mm", Locale.getDefault())
+        val date = parser.parse(raw)
+        if (date != null) formatter.format(date) else raw
+    } catch (e: Exception) {
+        raw
+    }
+}
+
+
 @Composable
-private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>) {
+private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>, viewModel: WeatherViewModel) {
     when (cityInfo) {
         is NetworkResponse.Loading -> {
             Text(
@@ -114,7 +144,7 @@ private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>) {
             val weather = cityInfo.data
             val city = weather.location.name
             val region = weather.location.region
-            val temperature = weather.current.temp_c
+            val temperature = if(viewModel.temperatureUnit.intValue == 0) weather.current.temp_c else weather.current.temp_f
             val condition = weather.current.condition.text
             val weatherIcon = getWeatherIcon(condition = condition)
 
@@ -152,9 +182,9 @@ private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>) {
                                     painter = painterResource(id = weatherIcon),
                                     contentDescription = condition,
                                 )
-                                DefaultText("${temperature}°C", fontSize = 40.sp)
+                                DefaultText(if(viewModel.temperatureUnit.intValue == 0) "${temperature}°C" else "${temperature}°F", fontSize = 40.sp)
                                 Spacer(modifier = Modifier.size(15.dp))
-                                CityWeatherAdditionalInfo(weather)
+                                CityWeatherAdditionalInfo(weather, viewModel)
                             }
                         }
                     }
@@ -193,7 +223,8 @@ fun getWeatherIcon(condition: String): Int {
 }
 
 @Composable
-private fun CityWeatherAdditionalInfo(cityInfo: WeatherModel) {
+private fun CityWeatherAdditionalInfo(cityInfo: WeatherModel, viewModel: WeatherViewModel) {
+    val windUnit = if(viewModel.windSpeedUnit.intValue == 0) cityInfo.current.wind_kph else cityInfo.current.wind_mph
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
@@ -207,7 +238,7 @@ private fun CityWeatherAdditionalInfo(cityInfo: WeatherModel) {
                 contentDescription = "Wind",
             )
             Spacer(modifier = Modifier.size(10.dp))
-            DefaultText(cityInfo.current.wind_kph + " km/h")
+            DefaultText(if(viewModel.windSpeedUnit.intValue == 0) "$windUnit km/h" else "$windUnit mph")
         }
         Spacer(modifier = Modifier.size(20.dp))
         Row(

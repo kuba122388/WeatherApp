@@ -1,5 +1,6 @@
 package com.example.weatherapp
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,18 +39,18 @@ import androidx.compose.ui.unit.sp
 import com.example.weatherapp.ui.DefaultText
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.AppFont
+import com.example.weatherapp.weatherViewModel.WeatherViewModel
 
-@Preview
 @Composable
-fun SettingsScreen() {
-    val currentRefreshOption = remember { mutableIntStateOf(0) }
-    val currentWindUnitOption = remember { mutableIntStateOf(0) }
-    val currentTempUnitOption = remember { mutableIntStateOf(0) }
+fun SettingsScreen(viewModel: WeatherViewModel) {
+    val currentRefreshOption = viewModel.refreshTime
+    val currentWindUnitOption = viewModel.windSpeedUnit
+    val currentTempUnitOption = viewModel.temperatureUnit
 
     val automaticRefreshOptions =
         listOf("1 min", "5 min", "10 min", "15 min", "30 min", "1 hour", "1 day")
-    val windUnitOptions = listOf("km/h", "m/s", "mph")
-    val temperatureOptions = listOf("Celsius", "Fahrenheit", "Kelvin")
+    val windUnitOptions = listOf("km/h", "mph")
+    val temperatureOptions = listOf("Celsius", "Fahrenheit")
 
     Column(
         modifier = Modifier
@@ -73,6 +74,7 @@ fun SettingsScreen() {
                     currentOption = currentRefreshOption.intValue
                 ) { newIndex ->
                     currentRefreshOption.intValue = newIndex
+                    viewModel.saveUserSettings()
                 }
 
                 SingleSetting(
@@ -81,6 +83,7 @@ fun SettingsScreen() {
                     currentOption = currentWindUnitOption.intValue
                 ) { newIndex ->
                     currentWindUnitOption.intValue = newIndex
+                    viewModel.saveUserSettings()
                 }
                 SingleSetting(
                     title = "Unit of temperature",
@@ -88,10 +91,9 @@ fun SettingsScreen() {
                     currentOption = currentTempUnitOption.intValue
                 ) { newIndex ->
                     currentTempUnitOption.intValue = newIndex
+                    viewModel.saveUserSettings()
                 }
             }
-
-
         }
     }
 }

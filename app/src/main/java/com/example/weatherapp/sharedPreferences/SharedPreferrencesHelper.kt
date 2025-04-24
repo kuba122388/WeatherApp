@@ -9,6 +9,21 @@ class SharedPreferencesHelper(context: Context) {
     private val sharedPreferences = context.getSharedPreferences("weather_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
 
+    fun saveSettings(tempUnit: Int, windUnit: Int, refresh: Int) {
+        sharedPreferences.edit()
+            .putInt("temperature_unit", tempUnit)
+            .putInt("wind_speed_unit", windUnit)
+            .putInt("refresh_time", refresh)
+            .apply()
+    }
+
+    fun loadSettings(): Triple<Int, Int, Int> {
+        val tempUnit = sharedPreferences.getInt("temperature_unit", 0)
+        val windUnit = sharedPreferences.getInt("wind_speed_unit", 0)
+        val refresh = sharedPreferences.getInt("refresh_time", 0)
+        return Triple(tempUnit, windUnit, refresh)
+    }
+
 
     fun saveFavoriteCities(cities: List<City>) {
         val json = gson.toJson(cities)

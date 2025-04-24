@@ -5,6 +5,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -17,6 +19,12 @@ import com.example.weatherapp.api.WeatherModel
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 
 class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHelper) : ViewModel() {
 
@@ -34,8 +42,63 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     private val _selectedCity = MutableLiveData<City?>()
     // val selectedCity: LiveData<City?> = _selectedCity
 
+    val temperatureUnit = mutableIntStateOf(0)
+    val windSpeedUnit = mutableIntStateOf(0)
+    val refreshTime = mutableIntStateOf(0)
+
+    private val _lastUpdated = MutableLiveData("Unknown")
+    val lastUpdated: LiveData<String> = _lastUpdated
+
+    private var refreshJob: Job? = null
+
+
     init {
         loadFavorites()
+        loadUserSettings()
+    }
+
+    private fun loadUserSettings() {
+        val (tempUnit, windUnit, refresh) = sharedPreferencesHelper.loadSettings()
+        temperatureUnit.intValue = tempUnit
+        windSpeedUnit.intValue = windUnit
+        refreshTime.intValue = refresh
+    }
+
+    fun saveUserSettings() {
+        sharedPreferencesHelper.saveSettings(
+            temperatureUnit.intValue,
+            windSpeedUnit.intValue,
+            refreshTime.intValue
+        )
+    }
+
+    private fun startAutoRefresh(context: Context) {
+        refreshJob?.cancel()
+
+        refreshJob = viewModelScope.launch {
+            while (true) {
+                delay(getRefreshIntervalMillis())
+                val city = _selectedCity.value
+                if (city != null && isInternetAvailable(context)) {
+                    refreshWeatherSilently()
+                }
+            }
+        }
+    }
+
+    private fun getRefreshIntervalMillis(): Long {
+        return when (refreshTime.intValue) {
+            0 -> 1 * 60 * 1000L
+            1 -> 5 * 60 * 1000L
+            2 -> 10 * 60 * 1000L
+            3 -> 15 * 60 * 1000L
+            4 -> 30 * 60 * 1000L
+            5 -> 60 * 60 * 1000L
+            6 -> 24 * 60 * 60 * 1000L
+            else -> {
+                1 * 60 * 1000L
+            }
+        }
     }
 
     fun checkConnectivityAndLoadData(context: Context) {
@@ -43,6 +106,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         _selectedCity.value = lastCity
 
         if (lastCity != null) {
+            startAutoRefresh(context)
             if (isInternetAvailable(context)) {
                 getWeather(lastCity)
                 fetchWeatherForFavoriteCities(context)
@@ -103,7 +167,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         }
     }
 
-    private fun isInternetAvailable(context: Context): Boolean {
+    fun isInternetAvailable(context: Context): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetwork = connectivityManager.activeNetworkInfo
@@ -112,6 +176,15 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
 
     private fun getWeather(city: City) {
         _weatherResult.value = NetworkResponse.Loading
+        fetchWeather(city)
+    }
+
+    fun refreshWeatherSilently() {
+        _selectedCity.value?.let { fetchWeather(it) }
+        Log.e("MyDebug", "ODŚWIEŻANIE")
+    }
+
+    private fun fetchWeather(city: City) {
         viewModelScope.launch {
             try {
                 val response = weatherApi.getWeather(
@@ -123,8 +196,14 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
                     response.body()?.let {
                         _weatherResult.value = NetworkResponse.Success(it)
                         sharedPreferencesHelper.saveLastChosenCity(city, it)
-
+                        _lastUpdated.postValue(
+                            SimpleDateFormat(
+                                "yyyy-MM-dd HH:mm:ss",
+                                Locale.getDefault()
+                            ).format(Date())
+                        )
                     }
+
                 } else {
                     _weatherResult.value = NetworkResponse.Error("Failed to load data")
                 }
@@ -133,6 +212,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
             }
         }
     }
+
 
     fun searchCities(query: String) {
         viewModelScope.launch {
@@ -177,10 +257,24 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
 
                 if (cityWeather != null) {
                     _weatherResult.postValue(NetworkResponse.Success(cityWeather))
+                    _lastUpdated.postValue(
+                        SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm:ss",
+                            Locale.getDefault()
+                        ).format(Date())
+                    )
+
                 } else {
                     val fallbackWeather = sharedPreferencesHelper.loadLastChosenCity()
                     if (fallbackWeather != null) {
                         _weatherResult.postValue(NetworkResponse.Success(fallbackWeather))
+                        _lastUpdated.postValue(
+                            SimpleDateFormat(
+                                "yyyy-MM-dd HH:mm:ss",
+                                Locale.getDefault()
+                            ).format(Date())
+                        )
+
                     } else {
                         _weatherResult.postValue(NetworkResponse.Error("Brak danych pogodowych dla tego miasta."))
                     }
