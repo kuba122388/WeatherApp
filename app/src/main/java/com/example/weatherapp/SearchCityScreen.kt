@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.example.weatherapp.api.City
 import com.example.weatherapp.api.NetworkResponse
 import com.example.weatherapp.ui.DefaultText
+import com.example.weatherapp.ui.isTablet
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
@@ -99,14 +100,6 @@ fun SearchCityScreen(
                 searchQuery = it
             }, viewModel = viewModel)
 
-//            item {
-//                when (val result = weatherResult.value) {
-//                    is NetworkResponse.Error -> Text(text = result.message)
-//                    NetworkResponse.Loading -> CircularProgressIndicator()
-//                    is NetworkResponse.Success -> Text(text = result.data.toString())
-//                    null -> {}
-//                }
-//            }
             Column (
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState())
@@ -142,13 +135,13 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
+        if (!isTablet()) Image(
             painter = painterResource(id = R.drawable.icon_town),
             contentDescription = "CityIcon",
             modifier = Modifier
                 .size(36.dp)
                 .alpha(0.5f)
-        )
+        ) else Spacer(modifier = Modifier.size(36.dp))
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -163,7 +156,7 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
             )
             HorizontalDivider(Modifier.size(80.dp, 0.dp), thickness = 2.dp)
         }
-        Image(
+        if(!isTablet()) Image(
             painter = painterResource(id = R.drawable.icon_settings),
             contentDescription = "Setting icon",
             modifier = Modifier
@@ -173,6 +166,7 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
                     onSettingsClick()
                 }
         )
+        else Spacer(modifier = Modifier.size(36.dp))
     }
 }
 

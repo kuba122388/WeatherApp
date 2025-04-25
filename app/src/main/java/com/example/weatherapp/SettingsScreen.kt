@@ -1,6 +1,6 @@
 package com.example.weatherapp
 
-import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -22,7 +23,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -33,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weatherapp.ui.DefaultText
@@ -42,7 +41,9 @@ import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
 
 @Composable
-fun SettingsScreen(viewModel: WeatherViewModel) {
+fun SettingsScreen(viewModel: WeatherViewModel, onBack: () -> Unit) {
+    BackHandler(onBack = onBack)
+
     val currentRefreshOption = viewModel.refreshTime
     val currentWindUnitOption = viewModel.windSpeedUnit
     val currentTempUnitOption = viewModel.temperatureUnit
@@ -160,8 +161,7 @@ fun SingleSetting(
             Row(
                 modifier = Modifier
                     .padding(bottom = 5.dp, top = 5.dp, start = 15.dp, end = 5.dp)
-                    .clickable { isDropdownExpanded.value = true }
-                    .fillMaxWidth(0.5f),
+                    .clickable { isDropdownExpanded.value = true },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {

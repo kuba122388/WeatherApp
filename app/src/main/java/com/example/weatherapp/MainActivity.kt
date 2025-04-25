@@ -10,7 +10,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,11 +26,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import com.example.weatherapp.ui.isTablet
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
 import com.example.weatherapp.weatherViewModel.WeatherViewModelFactory
+import kotlinx.coroutines.selects.select
 
 class MainActivity : ComponentActivity() {
     private val sharedPreferencesHelper by lazy { SharedPreferencesHelper(this) }
@@ -44,7 +49,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             WeatherAppTheme {
-                HomeScreen(viewModel = weatherViewModel)
+                if (isTablet()) {
+                    TabletHomeScreen(viewModel = weatherViewModel)
+                } else {
+                    PhoneHomeScreen(viewModel = weatherViewModel)
+                }
             }
         }
 
@@ -52,9 +61,62 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun TabletHomeScreen(viewModel: WeatherViewModel) {
+    var selectedIndex by rememberSaveable { mutableIntStateOf(1) }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brush = AppBackgroundGradient)
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            Column(modifier = Modifier.padding(innerPadding)) {
+                when (selectedIndex) {
+                    0 -> SearchCityScreen(
+                        viewModel,
+                        onSettingsClick = { selectedIndex = 2 },
+                        onCitySelected = { selectedIndex = 1 })
+
+                    1 -> {
+                        Row {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(0.3f)
+                            ) {
+                                WeatherHomeScreen(
+                                    viewModel
+                                ) { selectedIndex = 2 }
+                            }
+                            Column(
+                                modifier = Modifier.fillMaxWidth(0.5f)
+                            ) {
+                                SearchCityScreen(
+                                    viewModel = viewModel,
+                                    onSettingsClick = { selectedIndex = 2 }) {
+                                }
+                            }
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                FavoriteScreen(
+                                    viewModel = viewModel,
+                                    onSettingsClick = { selectedIndex = 2 }) {
+                                }
+                            }
+                        }
+                    }
+
+                    2 -> SettingsScreen(viewModel) { selectedIndex = 1 }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
-fun HomeScreen(viewModel: WeatherViewModel) {
+fun PhoneHomeScreen(viewModel: WeatherViewModel) {
     var selectedIndex by rememberSaveable { mutableIntStateOf(1) }
     Box(
         modifier = Modifier
@@ -84,7 +146,8 @@ fun HomeScreen(viewModel: WeatherViewModel) {
                         viewModel,
                         onSettingsClick = { selectedIndex = 3 },
                         onCitySelected = { selectedIndex = 1 })
-                    3 -> SettingsScreen(viewModel)
+
+                    3 -> SettingsScreen(viewModel) {selectedIndex = 1}
                 }
             }
         }

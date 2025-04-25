@@ -6,7 +6,6 @@ import android.net.ConnectivityManager
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -55,6 +54,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     init {
         loadFavorites()
         loadUserSettings()
+
     }
 
     private fun loadUserSettings() {
@@ -179,7 +179,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         fetchWeather(city)
     }
 
-    fun refreshWeatherSilently() {
+    private fun refreshWeatherSilently() {
         _selectedCity.value?.let { fetchWeather(it) }
         Log.e("MyDebug", "ODŚWIEŻANIE")
     }

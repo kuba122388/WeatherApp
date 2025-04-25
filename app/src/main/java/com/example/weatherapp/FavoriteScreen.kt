@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weatherapp.ui.isTablet
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
@@ -90,13 +91,14 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
+        if(!isTablet())Image(
             painter = painterResource(id = R.drawable.icon_fullheart),
             contentDescription = "FullHeart",
             modifier = Modifier
                 .size(36.dp)
                 .alpha(0.5f)
         )
+        else Spacer(modifier = Modifier.size(36.dp))
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

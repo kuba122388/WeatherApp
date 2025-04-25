@@ -1,6 +1,7 @@
 package com.example.weatherapp
 
 import android.util.Log
+import android.widget.Space
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.example.weatherapp.api.NetworkResponse
 import com.example.weatherapp.api.WeatherModel
 import com.example.weatherapp.ui.DefaultText
+import com.example.weatherapp.ui.isTablet
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.AppFont
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
@@ -85,14 +87,18 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit, viewModel: WeatherViewMod
                 .size(36.dp)
                 .alpha(0.5f)
                 .clickable {
-                    if (!viewModel.isInternetAvailable(context)){
-                        Toast.makeText(context, "No Internet Connection", Toast.LENGTH_LONG).show()
-                    }
-                    else{
-                        Toast.makeText(context, "Refreshing data...", Toast.LENGTH_SHORT).show()
+                    if (!viewModel.isInternetAvailable(context)) {
+                        Toast
+                            .makeText(context, "No Internet Connection", Toast.LENGTH_LONG)
+                            .show()
+                    } else {
+                        Toast
+                            .makeText(context, "Refreshing data...", Toast.LENGTH_SHORT)
+                            .show()
                         viewModel.checkConnectivityAndLoadData(context)
                     }
-                Log.e("MyDebug", "CLICKED")}
+                    Log.e("MyDebug", "CLICKED")
+                }
         )
         Text(
             text = "Last update: ${formatApiDate(lastUpdated)}",
@@ -102,7 +108,8 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit, viewModel: WeatherViewMod
                 fontSize = 20.sp
             )
         )
-        Image(
+        if (!isTablet())
+            Image(
             painter = painterResource(id = R.drawable.icon_settings),
             contentDescription = "Setting icon",
             modifier = Modifier
@@ -112,6 +119,8 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit, viewModel: WeatherViewMod
                     onSettingsClick()
                 }
         )
+        else
+            Spacer(modifier = Modifier.size(28.dp))
     }
 }
 
@@ -171,7 +180,7 @@ private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>, viewMod
                                 Spacer(modifier = Modifier.size(20.dp))
                                 DefaultText(
                                     city,
-                                    fontSize = 32.sp
+                                    fontSize = 28.sp
                                 )
                                 if (region != "" && region != city) DefaultText(string = region)
                                 DefaultText(condition, fontSize = 16.sp)
@@ -215,6 +224,7 @@ fun getWeatherIcon(condition: String): Int {
         "clear" -> R.drawable.weather_clear_night
         "overcast" -> R.drawable.weather_cloudy_night
         "rain" -> R.drawable.weather_rainy
+        "light rain" -> R.drawable.weather_rainy
         "moderate rain" -> R.drawable.weather_rainy
         "light rain shower" -> R.drawable.weather_rainy_sun
         "patchy rain nearby" -> R.drawable.weather_rainy

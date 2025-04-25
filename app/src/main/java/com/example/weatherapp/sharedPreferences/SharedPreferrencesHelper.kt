@@ -54,7 +54,15 @@ class SharedPreferencesHelper(context: Context) {
             val type = object : TypeToken<City>() {}.type
             gson.fromJson(json, type)
         } else {
-            null
+            City(
+                id = 1,
+                name = "Warszawa",
+                region = "",
+                country = "Poland",
+                lat = 52.2297,
+                lon = 21.0122,
+                url = ""
+            )
         }
     }
 
