@@ -6,5 +6,5 @@ import androidx.compose.ui.platform.LocalConfiguration
 @Composable
 fun isTablet(): Boolean {
     val config = LocalConfiguration.current
-    return config.screenWidthDp >= 600 && config.screenHeightDp >= 600
+    return config.smallestScreenWidthDp >= 600
 }
