@@ -48,7 +48,7 @@ class SharedPreferencesHelper(context: Context) {
         sharedPreferences.edit().putString("weather", json2).apply()
     }
 
-    fun loadLastCity(): City? {
+    fun loadLastCity(): City {
         val json = sharedPreferences.getString("last_city", null)
         return if (json != null) {
             val type = object : TypeToken<City>() {}.type

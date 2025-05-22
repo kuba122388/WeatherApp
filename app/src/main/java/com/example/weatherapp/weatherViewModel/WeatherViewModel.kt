@@ -93,15 +93,11 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         val lastCity = sharedPreferencesHelper.loadLastCity()
         _selectedCity.value = lastCity
 
-        if (lastCity != null) {
-            if (isInternetAvailable(context)) {
-                getWeather(lastCity)
-                fetchWeatherForFavoriteCities(context)
-            } else {
-                loadWeatherForCityFromFile(context, lastCity)
-            }
+        if (isInternetAvailable(context)) {
+            getWeather(lastCity)
+            fetchWeatherForFavoriteCities(context)
         } else {
-            _weatherResult.postValue(NetworkResponse.Error("Nie wybrano jeszcze żadnego miasta."))
+            loadWeatherForCityFromFile(context, lastCity)
         }
     }
 
@@ -113,8 +109,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
                 for (city in favoriteCitiesList) {
                     val response = weatherApi.getWeather(
                         apikey = Constant.apiKey,
-                        city = city.name,
-                        region = city.region
+                        city = city.name+", "+city.region,
                     )
 
                     if (response.isSuccessful && response.body() != null) {
@@ -140,7 +135,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         fetchWeather(city)
     }
 
-    fun refreshWeatherSilently() {
+    private fun refreshWeatherSilently() {
         _selectedCity.value?.let { fetchWeather(it) }
         Log.e("MyDebug", "ODŚWIEŻANIE")
     }
@@ -149,10 +144,12 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         viewModelScope.launch {
             try {
                 val response = weatherApi.getWeather(
-                    Constant.apiKey,
-                    city.name,
-                    city.region
+                    apikey = Constant.apiKey,
+                    city = city.name+", "+city.region,
                 )
+                Log.e("myDebug", "${city.name} ${city.region}")
+                Log.e("myDebug", "${response.body()?.location?.name} ${response.body()?.location?.region}")
+
                 if (response.isSuccessful) {
                     response.body()?.let {
                         _weatherResult.value = NetworkResponse.Success(it)
@@ -315,9 +312,8 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         viewModelScope.launch {
             try {
                 val response = weatherApi.getWeather(
-                    Constant.apiKey,
-                    city.name,
-                    city.region
+                    apikey = Constant.apiKey,
+                    city = city.name+", "+city.region,
                 )
 
                 if (response.isSuccessful) {
@@ -352,9 +348,6 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         }
     }
 
-
-
-
     fun selectCity(city: City, context: Context) {
         _selectedCity.value = city
 
@@ -370,7 +363,6 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         }
 
     }
-
 
     fun startAutoRefreshTimer(context: Context) {
         lastResumeTime = System.currentTimeMillis()

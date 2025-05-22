@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.weatherapp.ui.isTablet
@@ -36,7 +35,6 @@ import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import com.example.weatherapp.weatherViewModel.WeatherViewModel
 import com.example.weatherapp.weatherViewModel.WeatherViewModelFactory
-import kotlinx.coroutines.selects.select
 
 class MainActivity : ComponentActivity() {
     private val sharedPreferencesHelper by lazy { SharedPreferencesHelper(this) }

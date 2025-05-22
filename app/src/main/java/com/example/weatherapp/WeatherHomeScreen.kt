@@ -1,7 +1,6 @@
 package com.example.weatherapp
 
 import android.util.Log
-import android.widget.Space
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -39,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
 import com.example.weatherapp.api.NetworkResponse
 import com.example.weatherapp.api.WeatherModel
 import com.example.weatherapp.ui.DefaultText
@@ -54,7 +51,7 @@ import java.util.Locale
 @Composable
 fun WeatherHomeScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
 
-    val lifecycleOwner = LocalLifecycleOwner.current;
+    val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
 
     DisposableEffect(lifecycleOwner) {

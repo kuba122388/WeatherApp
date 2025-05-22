@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +15,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -47,7 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weatherapp.api.City
-import com.example.weatherapp.api.NetworkResponse
 import com.example.weatherapp.ui.DefaultText
 import com.example.weatherapp.ui.isTablet
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
@@ -66,7 +61,7 @@ fun SearchCityScreen(
     val suggestions by viewModel.citySuggestions.observeAsState(emptyList())
     val context = LocalContext.current
 
-    val favorites = viewModel.favoriteCities.observeAsState(emptySet())
+    val favorites by viewModel.favoriteCities.observeAsState(emptySet())
 
     Box(
         modifier = Modifier
@@ -111,7 +106,7 @@ fun SearchCityScreen(
             ){
                 suggestions.forEach { city ->
                     val isFavorite =
-                        favorites.value.any { it == city }
+                        favorites.any { it == city }
                     CityCard(
                         city = city,
                         isFavorite = isFavorite,
