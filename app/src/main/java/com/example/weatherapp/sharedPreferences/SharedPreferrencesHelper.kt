@@ -30,7 +30,7 @@ class SharedPreferencesHelper(context: Context) {
         sharedPreferences.edit().putString("favorite_cities_json", json).apply()
     }
 
-    fun getFavoriteCities(): List<City> {
+    fun loadFavoriteCities(): List<City> {
         val json = sharedPreferences.getString("favorite_cities_json", null)
         return if (json != null) {
             val type = object : TypeToken<List<City>>() {}.type

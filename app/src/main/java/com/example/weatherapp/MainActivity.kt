@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -28,6 +30,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.example.weatherapp.ui.isTablet
 import com.example.weatherapp.ui.theme.AppBackgroundGradient
 import com.example.weatherapp.ui.theme.WeatherAppTheme
@@ -74,22 +77,21 @@ fun TabletHomeScreen(viewModel: WeatherViewModel) {
         ) { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)) {
                 when (selectedIndex) {
-                    0 -> SearchCityScreen(
-                        viewModel,
-                        onSettingsClick = { selectedIndex = 2 },
-                        onCitySelected = { selectedIndex = 1 })
-
                     1 -> {
                         Row {
                             Column(
-                                modifier = Modifier.fillMaxWidth(0.3f)
+                                modifier = Modifier
+                                    .fillMaxWidth(0.3f)
+                                    .fillMaxHeight(0.65f)
                             ) {
                                 WeatherHomeScreen(
                                     viewModel
                                 ) { selectedIndex = 2 }
                             }
                             Column(
-                                modifier = Modifier.fillMaxWidth(0.5f)
+                                modifier = Modifier
+                                    .fillMaxWidth(0.5f)
+                                    .fillMaxHeight(0.65f)
                             ) {
                                 SearchCityScreen(
                                     viewModel = viewModel,
@@ -97,13 +99,21 @@ fun TabletHomeScreen(viewModel: WeatherViewModel) {
                                 }
                             }
                             Column(
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight(0.65f)
                             ) {
                                 FavoriteScreen(
                                     viewModel = viewModel,
                                     onSettingsClick = { selectedIndex = 2 }) {
                                 }
                             }
+                        }
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 10.dp)
+                        ){
+                            val cityInfo by viewModel.weatherResult.observeAsState()
+                            cityInfo?.let { DailyForecast(it) }
                         }
                     }
 

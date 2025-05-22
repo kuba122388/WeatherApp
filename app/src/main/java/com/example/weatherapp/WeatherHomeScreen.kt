@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -34,6 +36,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.weatherapp.api.NetworkResponse
 import com.example.weatherapp.api.WeatherModel
 import com.example.weatherapp.ui.DefaultText
@@ -48,10 +54,42 @@ import java.util.Locale
 @Composable
 fun WeatherHomeScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) {
 
+    val lifecycleOwner = LocalLifecycleOwner.current;
+    val context = LocalContext.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    viewModel.startAutoRefreshTimer(context)
+                }
+                Lifecycle.Event.ON_PAUSE -> {
+                    viewModel.pauseAutoRefresh()
+                }
+                else -> {}
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.pauseAutoRefresh()
+        }
+    }
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = AppBackgroundGradient)
+            .then(
+                if (!isTablet()) {
+                    Modifier
+                        .background(brush = AppBackgroundGradient)
+                } else {
+                    Modifier
+                }
+            )
             .padding(horizontal = 16.dp)
     ) {
         TopHomeNavBar(onSettingsClick, viewModel)
@@ -63,7 +101,7 @@ fun WeatherHomeScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit) 
 
             Spacer(modifier = Modifier.size(30.dp))
 
-            cityInfo?.let { DailyForecast(it) }
+            cityInfo?.let { if (!isTablet()) DailyForecast(it) }
         }
     }
 }
@@ -110,15 +148,15 @@ private fun TopHomeNavBar(onSettingsClick: () -> Unit, viewModel: WeatherViewMod
         )
         if (!isTablet())
             Image(
-            painter = painterResource(id = R.drawable.icon_settings),
-            contentDescription = "Setting icon",
-            modifier = Modifier
-                .size(36.dp)
-                .alpha(0.5f)
-                .clickable {
-                    onSettingsClick()
-                }
-        )
+                painter = painterResource(id = R.drawable.icon_settings),
+                contentDescription = "Setting icon",
+                modifier = Modifier
+                    .size(36.dp)
+                    .alpha(0.5f)
+                    .clickable {
+                        onSettingsClick()
+                    }
+            )
         else
             Spacer(modifier = Modifier.size(28.dp))
     }
@@ -137,7 +175,10 @@ fun formatApiDate(raw: String): String {
 
 
 @Composable
-private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>, viewModel: WeatherViewModel) {
+private fun CityWeatherMainInfo(
+    cityInfo: NetworkResponse<WeatherModel>,
+    viewModel: WeatherViewModel
+) {
     when (cityInfo) {
         is NetworkResponse.Loading -> {
             Text(
@@ -153,7 +194,8 @@ private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>, viewMod
             val weather = cityInfo.data
             val city = weather.location.name
             val region = weather.location.region
-            val temperature = if(viewModel.temperatureUnit.intValue == 0) weather.current.temp_c else weather.current.temp_f
+            val temperature =
+                if (viewModel.temperatureUnit.intValue == 0) weather.current.temp_c else weather.current.temp_f
             val condition = weather.current.condition.text
             val weatherIcon = getWeatherIcon(condition = condition)
 
@@ -191,7 +233,10 @@ private fun CityWeatherMainInfo(cityInfo: NetworkResponse<WeatherModel>, viewMod
                                     painter = painterResource(id = weatherIcon),
                                     contentDescription = condition,
                                 )
-                                DefaultText(if(viewModel.temperatureUnit.intValue == 0) "${temperature}°C" else "${temperature}°F", fontSize = 40.sp)
+                                DefaultText(
+                                    if (viewModel.temperatureUnit.intValue == 0) "${temperature}°C" else "${temperature}°F",
+                                    fontSize = 40.sp
+                                )
                                 Spacer(modifier = Modifier.size(15.dp))
                                 CityWeatherAdditionalInfo(weather, viewModel)
                             }
@@ -234,7 +279,8 @@ fun getWeatherIcon(condition: String): Int {
 
 @Composable
 private fun CityWeatherAdditionalInfo(cityInfo: WeatherModel, viewModel: WeatherViewModel) {
-    val windUnit = if(viewModel.windSpeedUnit.intValue == 0) cityInfo.current.wind_kph else cityInfo.current.wind_mph
+    val windUnit =
+        if (viewModel.windSpeedUnit.intValue == 0) cityInfo.current.wind_kph else cityInfo.current.wind_mph
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
@@ -248,7 +294,7 @@ private fun CityWeatherAdditionalInfo(cityInfo: WeatherModel, viewModel: Weather
                 contentDescription = "Wind",
             )
             Spacer(modifier = Modifier.size(10.dp))
-            DefaultText(if(viewModel.windSpeedUnit.intValue == 0) "$windUnit km/h" else "$windUnit mph")
+            DefaultText(if (viewModel.windSpeedUnit.intValue == 0) "$windUnit km/h" else "$windUnit mph")
         }
         Spacer(modifier = Modifier.size(20.dp))
         Row(
@@ -280,7 +326,7 @@ private fun CityWeatherAdditionalInfo(cityInfo: WeatherModel, viewModel: Weather
 
 
 @Composable
-private fun DailyForecast(cityInfo: NetworkResponse<WeatherModel>) {
+fun DailyForecast(cityInfo: NetworkResponse<WeatherModel>) {
     return Column {
         Row(
             Modifier

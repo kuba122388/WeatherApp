@@ -63,7 +63,6 @@ fun SearchCityScreen(
     var searchQuery by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
 
-    val weatherResult = viewModel.weatherResult.observeAsState()
     val suggestions by viewModel.citySuggestions.observeAsState(emptyList())
     val context = LocalContext.current
 
@@ -72,7 +71,14 @@ fun SearchCityScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = AppBackgroundGradient)
+            .then(
+                if (!isTablet()) {
+                    Modifier
+                        .background(brush = AppBackgroundGradient)
+                } else {
+                    Modifier
+                }
+            )
             .pointerInput(Unit) {
                 detectTapGestures(onTap = {
                     focusManager.clearFocus()
@@ -84,7 +90,6 @@ fun SearchCityScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .background(brush = AppBackgroundGradient)
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = {
                         focusManager.clearFocus()
@@ -114,7 +119,7 @@ fun SearchCityScreen(
                             viewModel.selectCity(city, context)
                             onCitySelected()
                         },
-                        onFavoriteToggle = { viewModel.toggleFavorite(city) }
+                        onFavoriteToggle = { viewModel.toggleFavorite(context, city) }
                     )
                 }
                 Spacer(Modifier.size(10.dp))

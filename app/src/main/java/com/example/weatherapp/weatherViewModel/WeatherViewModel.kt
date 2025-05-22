@@ -49,12 +49,14 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     val lastUpdated: LiveData<String> = _lastUpdated
 
     private var refreshJob: Job? = null
+    private var lastResumeTime = 0L
+    private var accumulatedActiveTime = 0L
+    private var targetInterval = getRefreshIntervalMillis()
 
 
     init {
         loadFavorites()
         loadUserSettings()
-
     }
 
     private fun loadUserSettings() {
@@ -70,20 +72,6 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
             windSpeedUnit.intValue,
             refreshTime.intValue
         )
-    }
-
-    private fun startAutoRefresh(context: Context) {
-        refreshJob?.cancel()
-
-        refreshJob = viewModelScope.launch {
-            while (true) {
-                delay(getRefreshIntervalMillis())
-                val city = _selectedCity.value
-                if (city != null && isInternetAvailable(context)) {
-                    refreshWeatherSilently()
-                }
-            }
-        }
     }
 
     private fun getRefreshIntervalMillis(): Long {
@@ -106,7 +94,6 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         _selectedCity.value = lastCity
 
         if (lastCity != null) {
-            startAutoRefresh(context)
             if (isInternetAvailable(context)) {
                 getWeather(lastCity)
                 fetchWeatherForFavoriteCities(context)
@@ -122,7 +109,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     private fun fetchWeatherForFavoriteCities(context: Context) {
         viewModelScope.launch {
             try {
-                val favoriteCitiesList = sharedPreferencesHelper.getFavoriteCities()
+                val favoriteCitiesList = sharedPreferencesHelper.loadFavoriteCities()
                 for (city in favoriteCitiesList) {
                     val response = weatherApi.getWeather(
                         apikey = Constant.apiKey,
@@ -141,32 +128,6 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         }
     }
 
-    private fun saveWeatherForFavorites(context: Context, newWeather: WeatherModel) {
-        val file = File(context.filesDir, "weather_data_for_favorites.json")
-        val gson = Gson()
-
-        val weatherList = if (file.exists()) {
-            try {
-                gson.fromJson(file.readText(), Array<WeatherModel>::class.java).toMutableList()
-            } catch (e: Exception) {
-                mutableListOf()
-            }
-        } else mutableListOf()
-
-        weatherList.removeAll {
-            it.location.name == newWeather.location.name &&
-                    it.location.region == newWeather.location.region
-        }
-
-        weatherList.add(newWeather)
-
-        try {
-            file.writeText(gson.toJson(weatherList))
-        } catch (e: Exception) {
-            Log.e("WeatherViewModel", "Error saving favorite weather: ${e.message}")
-        }
-    }
-
     fun isInternetAvailable(context: Context): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -179,7 +140,7 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         fetchWeather(city)
     }
 
-    private fun refreshWeatherSilently() {
+    fun refreshWeatherSilently() {
         _selectedCity.value?.let { fetchWeather(it) }
         Log.e("MyDebug", "ODŚWIEŻANIE")
     }
@@ -226,22 +187,58 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
     }
 
     private fun loadFavorites() {
-        _favoriteCities.value = sharedPreferencesHelper.getFavoriteCities()
+        _favoriteCities.value = sharedPreferencesHelper.loadFavoriteCities()
     }
 
-    fun toggleFavorite(city: City) {
-        val currentFavorites = sharedPreferencesHelper.getFavoriteCities().toMutableList()
+    fun toggleFavorite(context: Context, city: City) {
+        val currentFavorites = sharedPreferencesHelper.loadFavoriteCities().toMutableList()
+        val isFavorite = currentFavorites.any { it == city }
 
-        val alreadyFavorite = currentFavorites.any { it == city }
-
-        if (alreadyFavorite) {
-            currentFavorites.removeAll { it == city }
+        if (isFavorite) {
+            removeFavorite(context, city, currentFavorites)
         } else {
-            currentFavorites.add(city)
+            addFavorite(context, city, currentFavorites)
         }
 
         sharedPreferencesHelper.saveFavoriteCities(currentFavorites)
         _favoriteCities.value = currentFavorites
+    }
+
+    private fun removeFavorite(context: Context, city: City, list: MutableList<City>) {
+        list.removeAll { it == city }
+        deleteWeatherForCityFromFile(context, city)
+    }
+
+    private fun addFavorite(context: Context, city: City, list: MutableList<City>) {
+        list.add(city)
+        saveWeatherForCityToFile(context, city)
+    }
+
+
+    private fun saveWeatherForFavorites(context: Context, newWeather: WeatherModel) {
+        val file = File(context.filesDir, "weather_data_for_favorites.json")
+        val gson = Gson()
+
+        val weatherList = if (file.exists()) {
+            try {
+                gson.fromJson(file.readText(), Array<WeatherModel>::class.java).toMutableList()
+            } catch (e: Exception) {
+                mutableListOf()
+            }
+        } else mutableListOf()
+
+        weatherList.removeAll {
+            it.location.name == newWeather.location.name &&
+                    it.location.region == newWeather.location.region
+        }
+
+        weatherList.add(newWeather)
+
+        try {
+            file.writeText(gson.toJson(weatherList))
+        } catch (e: Exception) {
+            Log.e("WeatherViewModel", "Error saving favorite weather: ${e.message}")
+        }
     }
 
     private fun loadWeatherForCityFromFile(context: Context, city: City) {
@@ -290,6 +287,73 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         }
     }
 
+    private fun deleteWeatherForCityFromFile(context: Context, city: City) {
+        val file = File(context.filesDir, "weather_data_for_favorites.json")
+        if (file.exists()) {
+            try {
+                val json = file.readText()
+                val weatherList = Gson().fromJson(json, Array<WeatherModel>::class.java).toMutableList()
+                val removed = weatherList.removeAll { it.location.name == city.name && it.location.region == city.region }
+
+                if (removed) {
+                    file.writeText(Gson().toJson(weatherList))
+                    Log.d("WeatherViewModel", "Usunięto dane pogodowe dla miasta: ${city.name}")
+                }
+
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Błąd odczytu danych pogodowych z pliku: ${e.message}")
+                _weatherResult.postValue(NetworkResponse.Error("Nie udało się wczytać danych pogodowych z pliku."))
+            }
+        } else {
+            Log.e("WeatherViewModel", "Plik nie istnieje")
+
+            _weatherResult.postValue(NetworkResponse.Error("Brak zapisanych danych pogodowych."))
+        }
+    }
+
+    private fun saveWeatherForCityToFile(context: Context, city: City) {
+        viewModelScope.launch {
+            try {
+                val response = weatherApi.getWeather(
+                    Constant.apiKey,
+                    city.name,
+                    city.region
+                )
+
+                if (response.isSuccessful) {
+                    val weather = response.body()
+                    if (weather != null) {
+                        val file = File(context.filesDir, "weather_data_for_favorites.json")
+                        val gson = Gson()
+
+                        val weatherList = if (file.exists()) {
+                            try {
+                                gson.fromJson(file.readText(), Array<WeatherModel>::class.java).toMutableList()
+                            } catch (e: Exception) {
+                                mutableListOf()
+                            }
+                        } else mutableListOf()
+
+                        weatherList.add(weather)
+
+                        try {
+                            file.writeText(gson.toJson(weatherList))
+                        } catch (e: Exception) {
+                            Log.e("WeatherViewModel", "Błąd zapisu danych pogodowych do pliku: ${e.message}")
+                        }
+                    }
+                } else {
+                    Log.e("WeatherViewModel", "Nieudane pobieranie danych pogodowych dla ${city.name}")
+                }
+
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Błąd pobierania danych pogodowych: ${e.message}")
+            }
+        }
+    }
+
+
+
 
     fun selectCity(city: City, context: Context) {
         _selectedCity.value = city
@@ -306,6 +370,39 @@ class WeatherViewModel(private val sharedPreferencesHelper: SharedPreferencesHel
         }
 
     }
+
+
+    fun startAutoRefreshTimer(context: Context) {
+        lastResumeTime = System.currentTimeMillis()
+
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
+            while (true) {
+                val now = System.currentTimeMillis()
+                val elapsed = accumulatedActiveTime + (now - lastResumeTime)
+
+                val remaining = targetInterval - elapsed
+                if (remaining <= 0) {
+                    if (_selectedCity.value != null && isInternetAvailable(context)) {
+                        refreshWeatherSilently()
+                    }
+
+                    // Reset timer
+                    lastResumeTime = System.currentTimeMillis()
+                    accumulatedActiveTime = 0L
+                } else {
+                    delay(remaining)
+                }
+            }
+        }
+    }
+
+    fun pauseAutoRefresh() {
+        val now = System.currentTimeMillis()
+        accumulatedActiveTime += now - lastResumeTime
+        refreshJob?.cancel()
+    }
+
 
 }
 

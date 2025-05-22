@@ -42,8 +42,15 @@ fun FavoriteScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, onC
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = AppBackgroundGradient)
-            .padding(horizontal = 16.dp)
+            .then(
+                if (!isTablet()) {
+                    Modifier
+                        .background(brush = AppBackgroundGradient)
+                        .padding(horizontal = 16.dp)
+                } else {
+                    Modifier
+                }
+            )
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -74,7 +81,7 @@ fun FavoriteScreen(viewModel: WeatherViewModel, onSettingsClick: () -> Unit, onC
                             viewModel.selectCity(city, context)
                             onCitySelected()
                         },
-                        onFavoriteToggle = { viewModel.toggleFavorite(city) })
+                        onFavoriteToggle = { viewModel.toggleFavorite(context, city) })
                 }
                 Spacer(Modifier.size(10.dp))
             }
